@@ -4,11 +4,13 @@ import SwiftUI
 struct WandKitView: View {
     let response: EventResponse
     let onSubmit: @Sendable ([SubmitFormResponseRequest.Answer]) async -> Void
+    let onDismiss: @Sendable () async -> Void
 
     @State private var isVisible = false
     @State private var isDismissing = false
     @State private var isShowingThankYou = false
     @State private var didSubmit = false
+    @State private var didDismiss = false
     @State private var currentPageIndex = 0
     @State private var selectedStars: [String: Int] = [:]
     @State private var selectedThumbs: [String: Bool] = [:]
@@ -252,6 +254,7 @@ private extension WandKitView {
         }
 
         autoDismissTask?.cancel()
+        submitDismissalIfNeeded()
         WandKitLogger.debug("Dismiss requested")
         isDismissing = true
 
@@ -261,6 +264,17 @@ private extension WandKitView {
 
         DispatchQueue.main.asyncAfter(deadline: .now() + animationDuration) {
             WandKitWindowPresenter.dismiss()
+        }
+    }
+
+    func submitDismissalIfNeeded() {
+        guard !didDismiss, !didSubmit else {
+            return
+        }
+
+        didDismiss = true
+        Task {
+            await onDismiss()
         }
     }
 

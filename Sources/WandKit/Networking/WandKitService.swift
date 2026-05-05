@@ -78,6 +78,22 @@ struct WandKitService: Sendable {
         WandKitLogger.debug("Submit form response completed")
     }
 
+    func dismissForm(impressionId: String) async throws {
+        WandKitLogger.debug("Dismissing form for impressionId=\(impressionId)")
+        let response = try await storage.httpClient.post(
+            to: WandKitConstants.dismissFormURL(impressionId: impressionId),
+            headers: headers(),
+            body: nil
+        )
+
+        guard (200 ..< 300).contains(response.response.statusCode) else {
+            WandKitLogger.debug("Dismiss form failed with statusCode=\(response.response.statusCode)")
+            throw HTTPClientError.invalidStatusCode(response.response.statusCode)
+        }
+
+        WandKitLogger.debug("Dismiss form completed")
+    }
+
     func rate(flowName: String) async throws {
         WandKitLogger.debug("Sending rate request for flowName=\(flowName)")
         try? await Task.sleep(nanoseconds: 1_000_000_000)
@@ -85,7 +101,11 @@ struct WandKitService: Sendable {
 
         #if os(iOS)
         WandKitLogger.debug("Presenting WandKit window")
-        await WandKitWindowPresenter.present(response: .mock, onSubmit: { _ in })
+        await WandKitWindowPresenter.present(
+            response: .mock,
+            onSubmit: { _ in },
+            onDismiss: {}
+        )
         #endif
     }
 

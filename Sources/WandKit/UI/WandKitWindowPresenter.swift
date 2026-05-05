@@ -7,7 +7,8 @@ enum WandKitWindowPresenter {
 
     static func present(
         response: EventResponse,
-        onSubmit: @escaping @Sendable ([SubmitFormResponseRequest.Answer]) async -> Void
+        onSubmit: @escaping @Sendable ([SubmitFormResponseRequest.Answer]) async -> Void,
+        onDismiss: @escaping @Sendable () async -> Void
     ) {
         WandKitLogger.debug("Present requested")
         guard let windowScene = activeWindowScene() else { return }
@@ -21,13 +22,18 @@ enum WandKitWindowPresenter {
 
         if let window, window.windowScene === windowScene {
             WandKitLogger.debug("Reusing existing window")
-            window.update(response: response, onSubmit: onSubmit)
+            window.update(response: response, onSubmit: onSubmit, onDismiss: onDismiss)
             window.isHidden = false
             return
         }
 
         WandKitLogger.debug("Creating a new window for presentation")
-        let newWindow = PasstroughWindow(windowScene: windowScene, response: response, onSubmit: onSubmit)
+        let newWindow = PasstroughWindow(
+            windowScene: windowScene,
+            response: response,
+            onSubmit: onSubmit,
+            onDismiss: onDismiss
+        )
         window = newWindow
     }
 

@@ -16,10 +16,19 @@ enum WandKitConstants {
     }
 
     static func submitFormResponseURL(impressionId: String) -> URL {
+        formURL(impressionId: impressionId)
+            .appendingPathComponent("response")
+    }
+
+    static func dismissFormURL(impressionId: String) -> URL {
+        formURL(impressionId: impressionId)
+            .appendingPathComponent("dismiss")
+    }
+
+    private static func formURL(impressionId: String) -> URL {
         formsPathComponents.reduce(apiBaseURL) { url, component in
             url.appendingPathComponent(component)
         }
         .appendingPathComponent(impressionId)
-        .appendingPathComponent("response")
     }
 }
