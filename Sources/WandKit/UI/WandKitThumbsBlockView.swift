@@ -2,7 +2,7 @@
 import SwiftUI
 
 struct WandKitThumbsBlockView: View {
-    let block: EventResponse.Block
+    let page: EventResponse.Page
     let onSelect: (Bool) -> Void
 
     @State private var selectedValue: Bool?
@@ -10,7 +10,7 @@ struct WandKitThumbsBlockView: View {
 
     var body: some View {
         VStack(alignment: .center, spacing: 16) {
-            WandKitBlockLabelView(block: block)
+            WandKitBlockLabelView(page: page)
 
             HStack(spacing: 12) {
                 thumbButton(isUpvote: true)

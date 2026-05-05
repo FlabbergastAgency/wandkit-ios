@@ -13,11 +13,14 @@ extension EventResponse {
             impressionId: "imp_mock_123",
             title: "How was your experience?",
             description: "Tell us what went well and what we can improve.",
-            blocks: [
+            pages: [
                 .init(
                     id: "rating",
                     type: .stars,
-                    label: "Rate your experience",
+                    title: "Rate your experience",
+                    subtitle: "How did this feel overall?",
+                    imageUrl: nil,
+                    nextButtonLabel: "Next",
                     required: true,
                     options: nil,
                     allowMultiple: nil,
@@ -27,7 +30,10 @@ extension EventResponse {
                 .init(
                     id: "recommendation",
                     type: .thumbs,
-                    label: "Would you recommend this to a friend?",
+                    title: "Would you recommend this to a friend?",
+                    subtitle: nil,
+                    imageUrl: nil,
+                    nextButtonLabel: "Next",
                     required: true,
                     options: nil,
                     allowMultiple: nil,
@@ -37,7 +43,10 @@ extension EventResponse {
                 .init(
                     id: "highlights",
                     type: .multiChoice,
-                    label: "What stood out the most?",
+                    title: "What stood out the most?",
+                    subtitle: "Pick any that apply.",
+                    imageUrl: nil,
+                    nextButtonLabel: "Confirm",
                     required: false,
                     options: [
                         .init(id: "speed", label: "Fast"),
@@ -51,7 +60,10 @@ extension EventResponse {
                 .init(
                     id: "feedback",
                     type: .text,
-                    label: "Anything else you'd like to share?",
+                    title: "Anything else you'd like to share?",
+                    subtitle: nil,
+                    imageUrl: nil,
+                    nextButtonLabel: "Send",
                     required: false,
                     options: nil,
                     allowMultiple: nil,
@@ -69,13 +81,16 @@ extension EventResponse {
         public let impressionId: String
         public let title: String
         public let description: String
-        public let blocks: [Block]
+        public let pages: [Page]
     }
 
-    public struct Block: Decodable, Sendable {
+    public struct Page: Decodable, Sendable {
         public let id: String
-        public let type: BlockType
-        public let label: String
+        public let type: PageType
+        public let title: String
+        public let subtitle: String?
+        public let imageUrl: String?
+        public let nextButtonLabel: String?
         public let required: Bool
         public let options: [Option]?
         public let allowMultiple: Bool?
@@ -88,7 +103,7 @@ extension EventResponse {
         public let label: String
     }
 
-    public enum BlockType: String, Decodable, Sendable {
+    public enum PageType: String, Decodable, Sendable {
         case thumbs
         case stars
         case multiChoice = "multi_choice"

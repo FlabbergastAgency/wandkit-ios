@@ -2,12 +2,16 @@
 import SwiftUI
 import UIKit
 
-public final class PasstroughWindow: UIWindow {
-    public init(windowScene: UIWindowScene, response: EventResponse) {
+final class PasstroughWindow: UIWindow {
+    init(
+        windowScene: UIWindowScene,
+        response: EventResponse,
+        onSubmit: @escaping @Sendable ([SubmitFormResponseRequest.Answer]) async -> Void
+    ) {
         WandKitLogger.debug("Creating PasstroughWindow")
         super.init(windowScene: windowScene)
 
-        update(response: response)
+        update(response: response, onSubmit: onSubmit)
         backgroundColor = .clear
         windowLevel = .alert + 1
         isHidden = false
@@ -19,9 +23,12 @@ public final class PasstroughWindow: UIWindow {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func update(response: EventResponse) {
+    func update(
+        response: EventResponse,
+        onSubmit: @escaping @Sendable ([SubmitFormResponseRequest.Answer]) async -> Void
+    ) {
         WandKitLogger.debug("Updating hosted WandKit view")
-        let viewController = UIHostingController(rootView: WandKitView(response: response))
+        let viewController = UIHostingController(rootView: WandKitView(response: response, onSubmit: onSubmit))
         viewController.view.backgroundColor = .clear
         rootViewController = viewController
     }

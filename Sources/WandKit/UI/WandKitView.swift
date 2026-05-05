@@ -3,11 +3,13 @@ import SwiftUI
 
 struct WandKitView: View {
     let response: EventResponse
+    let onSubmit: @Sendable ([SubmitFormResponseRequest.Answer]) async -> Void
 
     @State private var isVisible = false
     @State private var isDismissing = false
     @State private var isShowingThankYou = false
-    @State private var currentBlockIndex = 0
+    @State private var didSubmit = false
+    @State private var currentPageIndex = 0
     @State private var selectedStars: [String: Int] = [:]
     @State private var selectedThumbs: [String: Bool] = [:]
     @State private var selectedOptions: [String: Set<String>] = [:]
@@ -45,15 +47,15 @@ private extension WandKitView {
             return "wandkit-thank-you"
         }
 
-        return currentBlock?.id ?? "wandkit-empty"
+        return currentPage?.id ?? "wandkit-empty"
     }
 
-    var currentBlock: EventResponse.Block? {
-        guard response.form.blocks.indices.contains(currentBlockIndex) else {
+    var currentPage: EventResponse.Page? {
+        guard response.form.pages.indices.contains(currentPageIndex) else {
             return nil
         }
 
-        return response.form.blocks[currentBlockIndex]
+        return response.form.pages[currentPageIndex]
     }
 
     @ViewBuilder
@@ -78,64 +80,148 @@ private extension WandKitView {
                     }
                 }
 
-                if let block = currentBlock {
-                    blockView(for: block)
-                        .id(block.id)
+                if let page = currentPage {
+                    pageView(for: page)
+                        .id(page.id)
                 }
             }
         }
     }
 
     @ViewBuilder
-    func blockView(for block: EventResponse.Block) -> some View {
-        switch block.type {
+    func pageView(for page: EventResponse.Page) -> some View {
+        VStack(alignment: .center, spacing: 16) {
+            pageImage(for: page)
+
+            questionView(for: page)
+        }
+    }
+
+    @ViewBuilder
+    func questionView(for page: EventResponse.Page) -> some View {
+        switch page.type {
         case .stars:
-            WandKitStarsBlockView(block: block) { value in
-                selectedStars[block.id] = value
-                advance(from: block)
+            WandKitStarsBlockView(page: page) { value in
+                selectedStars[page.id] = value
+                advance(from: page)
             }
         case .thumbs:
-            WandKitThumbsBlockView(block: block) { isPositive in
-                selectedThumbs[block.id] = isPositive
-                advance(from: block)
+            WandKitThumbsBlockView(page: page) { isPositive in
+                selectedThumbs[page.id] = isPositive
+                advance(from: page)
             }
         case .multiChoice:
             WandKitMultiChoiceBlockView(
-                block: block,
-                selection: selectionBinding(for: block),
+                page: page,
+                selection: selectionBinding(for: page),
                 onSkip: {
-                    selectedOptions[block.id] = []
-                    advance(from: block)
+                    selectedOptions[page.id] = []
+                    advance(from: page)
                 },
                 onConfirm: {
-                    advance(from: block)
+                    advance(from: page)
                 }
             )
         case .text:
             WandKitTextBlockView(
-                block: block,
-                text: textBinding(for: block),
+                page: page,
+                text: textBinding(for: page),
                 onSkip: {
-                    textValues[block.id] = ""
-                    advance(from: block)
+                    textValues[page.id] = ""
+                    advance(from: page)
                 },
                 onConfirm: {
-                    advance(from: block)
+                    advance(from: page)
                 }
             )
         }
     }
 
-    func advance(from block: EventResponse.Block) {
-        if currentBlockIndex < response.form.blocks.count - 1 {
+    @ViewBuilder
+    func pageImage(for page: EventResponse.Page) -> some View {
+        if let imageUrl = page.imageUrl, let url = URL(string: imageUrl) {
+            AsyncImage(url: url) { image in
+                image
+                    .resizable()
+                    .scaledToFit()
+            } placeholder: {
+                ProgressView()
+            }
+            .frame(maxHeight: 160)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+    }
+
+    func advance(from page: EventResponse.Page) {
+        if currentPageIndex < response.form.pages.count - 1 {
             WandKitHaptics.stepChange()
 
             withAnimation(.snappy(duration: animationDuration)) {
-                currentBlockIndex += 1
+                currentPageIndex += 1
             }
         } else {
-            WandKitLogger.debug("Completed form for eventId=\(response.eventId), lastBlockId=\(block.id)")
+            WandKitLogger.debug("Completed form for eventId=\(response.eventId), lastPageId=\(page.id)")
+            submitAnswersOnce()
             showThankYouThenDismiss()
+        }
+    }
+
+    func submitAnswersOnce() {
+        guard !didSubmit else {
+            return
+        }
+
+        didSubmit = true
+        let answers = formAnswers()
+        Task {
+            await onSubmit(answers)
+        }
+    }
+
+    func formAnswers() -> [SubmitFormResponseRequest.Answer] {
+        response.form.pages.compactMap { page in
+            switch page.type {
+            case .stars:
+                guard let value = selectedStars[page.id] else {
+                    return nil
+                }
+
+                return .init(
+                    pageId: page.id,
+                    thumb: nil,
+                    stars: value,
+                    selectedOptionIds: nil,
+                    text: nil
+                )
+            case .thumbs:
+                guard let value = selectedThumbs[page.id] else {
+                    return nil
+                }
+
+                return .init(
+                    pageId: page.id,
+                    thumb: value ? .up : .down,
+                    stars: nil,
+                    selectedOptionIds: nil,
+                    text: nil
+                )
+            case .multiChoice:
+                return .init(
+                    pageId: page.id,
+                    thumb: nil,
+                    stars: nil,
+                    selectedOptionIds: (selectedOptions[page.id] ?? []).sorted(),
+                    text: nil
+                )
+            case .text:
+                return .init(
+                    pageId: page.id,
+                    thumb: nil,
+                    stars: nil,
+                    selectedOptionIds: nil,
+                    text: textValues[page.id] ?? ""
+                )
+            }
         }
     }
 
@@ -178,30 +264,30 @@ private extension WandKitView {
         }
     }
 
-    func textBinding(for block: EventResponse.Block) -> Binding<String> {
+    func textBinding(for page: EventResponse.Page) -> Binding<String> {
         Binding(
-            get: { textValues[block.id] ?? "" },
+            get: { textValues[page.id] ?? "" },
             set: { newValue in
-                if let maxLength = block.maxLength {
-                    textValues[block.id] = String(newValue.prefix(maxLength))
+                if let maxLength = page.maxLength {
+                    textValues[page.id] = String(newValue.prefix(maxLength))
                 } else {
-                    textValues[block.id] = newValue
+                    textValues[page.id] = newValue
                 }
             }
         )
     }
 
-    func selectionBinding(for block: EventResponse.Block) -> Binding<Set<String>> {
+    func selectionBinding(for page: EventResponse.Page) -> Binding<Set<String>> {
         Binding(
-            get: { selectedOptions[block.id] ?? [] },
+            get: { selectedOptions[page.id] ?? [] },
             set: { newValue in
-                if block.allowMultiple == true {
-                    selectedOptions[block.id] = newValue
+                if page.allowMultiple == true {
+                    selectedOptions[page.id] = newValue
                 } else {
                     if let firstValue = newValue.first {
-                        selectedOptions[block.id] = [firstValue]
+                        selectedOptions[page.id] = [firstValue]
                     } else {
-                        selectedOptions[block.id] = []
+                        selectedOptions[page.id] = []
                     }
                 }
             }

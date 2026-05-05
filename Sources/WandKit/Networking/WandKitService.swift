@@ -1,13 +1,8 @@
 import Foundation
 
 @available(iOS 14.0, macOS 10.15, *)
-struct WandKitService {
+struct WandKitService: Sendable {
     private let storage: WandKitStorage
-    @MainActor private static let requestDateFormatter: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter
-    }()
 
     init(storage: WandKitStorage) {
         WandKitLogger.debug("Initializing service")
@@ -30,36 +25,57 @@ struct WandKitService {
         properties: [String: String]? = nil,
         occurredAt: Date = Date()
     ) async throws -> EventResponse {
-        WandKitLogger.debug("Returning mock event response for eventName=\(eventName)")
-        return .mock
+        let externalUserId = storage.externalUserId.flatMap { value in
+            value.isEmpty ? nil : value
+        } ?? UUID().uuidString
 
-//        let externalUserId = storage.externalUserId.flatMap { value in
-//            value.isEmpty ? nil : value
-//        } ?? "unknown"
-//
-//        WandKitLogger.debug("Sending event request for eventName=\(eventName)")
-//        let response = try await storage.httpClient.post(
-//            to: WandKitConstants.eventsURL,
-//            headers: headers(),
-//            body: EventRequest(
-//                eventName: eventName,
-//                user: .init(
-//                    externalUserId: externalUserId,
-//                    deviceId: storage.deviceId
-//                ),
-//                properties: properties,
-//                occurredAt: occurredAt
-//            ),
-//            encoder: requestEncoder()
-//        )
-//
-//        guard (200 ..< 300).contains(response.response.statusCode) else {
-//            WandKitLogger.debug("Event request failed with statusCode=\(response.response.statusCode)")
-//            throw HTTPClientError.invalidStatusCode(response.response.statusCode)
-//        }
-//
-//        WandKitLogger.debug("Event request completed with event response")
-//        return try responseDecoder().decode(EventResponse.self, from: response.data)
+        WandKitLogger.debug("Sending event request for eventName=\(eventName)")
+        let response = try await storage.httpClient.post(
+            to: WandKitConstants.eventsURL,
+            headers: headers(),
+            body: EventRequest(
+                eventName: eventName,
+                user: .init(
+                    externalUserId: externalUserId,
+                    deviceId: storage.deviceId
+                ),
+                properties: properties,
+                occurredAt: occurredAt
+            ),
+            encoder: requestEncoder()
+        )
+
+        guard (200 ..< 300).contains(response.response.statusCode) else {
+            WandKitLogger.debug("Event request failed with statusCode=\(response.response.statusCode)")
+            throw HTTPClientError.invalidStatusCode(response.response.statusCode)
+        }
+
+        WandKitLogger.debug("Event request completed with event response")
+        return try responseDecoder().decode(EventResponse.self, from: response.data)
+    }
+
+    func submitFormResponse(
+        impressionId: String,
+        answers: [SubmitFormResponseRequest.Answer],
+        completedAt: Date = Date()
+    ) async throws {
+        WandKitLogger.debug("Submitting form response for impressionId=\(impressionId)")
+        let response = try await storage.httpClient.post(
+            to: WandKitConstants.submitFormResponseURL(impressionId: impressionId),
+            headers: headers(),
+            body: SubmitFormResponseRequest(
+                answers: answers,
+                completedAt: completedAt
+            ),
+            encoder: requestEncoder()
+        )
+
+        guard (200 ..< 300).contains(response.response.statusCode) else {
+            WandKitLogger.debug("Submit form response failed with statusCode=\(response.response.statusCode)")
+            throw HTTPClientError.invalidStatusCode(response.response.statusCode)
+        }
+
+        WandKitLogger.debug("Submit form response completed")
     }
 
     func rate(flowName: String) async throws {
@@ -69,7 +85,7 @@ struct WandKitService {
 
         #if os(iOS)
         WandKitLogger.debug("Presenting WandKit window")
-        await WandKitWindowPresenter.present(response: .mock)
+        await WandKitWindowPresenter.present(response: .mock, onSubmit: { _ in })
         #endif
     }
 
@@ -89,7 +105,9 @@ struct WandKitService {
         encoder.keyEncodingStrategy = .convertToSnakeCase
         encoder.dateEncodingStrategy = .custom { date, encoder in
             var container = encoder.singleValueContainer()
-            let value = Self.requestDateFormatter.string(from: date)
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            let value = formatter.string(from: date)
             try container.encode(value)
         }
         return encoder

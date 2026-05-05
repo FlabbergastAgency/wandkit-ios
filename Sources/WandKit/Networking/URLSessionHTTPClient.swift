@@ -50,6 +50,8 @@ struct URLSessionHTTPClient: HTTPClient {
 
     private func perform(_ request: URLRequest) async throws -> (Data, URLResponse) {
         try await withCheckedThrowingContinuation { continuation in
+            print(request.cURL(pretty: true))
+
             let task = session.dataTask(with: request) { data, response, error in
                 if let error {
                     WandKitLogger.debug("Network request failed: \(error.localizedDescription)")

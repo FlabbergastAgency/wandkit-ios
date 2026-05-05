@@ -33,7 +33,18 @@ public enum WandKit {
 
             print(response)
 
-            await WandKitWindowPresenter.present(response: response)
+            #if os(iOS)
+            await WandKitWindowPresenter.present(response: response) { answers in
+                do {
+                    try await service.submitFormResponse(
+                        impressionId: response.form.impressionId,
+                        answers: answers
+                    )
+                } catch {
+                    WandKitLogger.debug("Submit form response failed: \(error.localizedDescription)")
+                }
+            }
+            #endif
         }
     }
 }

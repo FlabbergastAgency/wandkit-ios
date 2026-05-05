@@ -2,17 +2,17 @@
 import SwiftUI
 
 struct WandKitMultiChoiceBlockView: View {
-    let block: EventResponse.Block
+    let page: EventResponse.Page
     @Binding var selection: Set<String>
     let onSkip: () -> Void
     let onConfirm: () -> Void
 
     var body: some View {
         VStack(alignment: .center, spacing: 16) {
-            WandKitBlockLabelView(block: block)
+            WandKitBlockLabelView(page: page)
 
             VStack(alignment: .center, spacing: 8) {
-                ForEach(block.options ?? [], id: \.id) { option in
+                ForEach(page.options ?? [], id: \.id) { option in
                     Button {
                         WandKitHaptics.buttonTap()
                         toggle(optionId: option.id)
@@ -36,7 +36,7 @@ struct WandKitMultiChoiceBlockView: View {
 
             HStack(spacing: 12) {
                 actionButton(title: "Skip", isPrimary: false, action: onSkip)
-                actionButton(title: "Confirm", isPrimary: true, action: onConfirm)
+                actionButton(title: page.nextButtonLabel ?? "Confirm", isPrimary: true, action: onConfirm)
             }
         }
     }
@@ -44,7 +44,7 @@ struct WandKitMultiChoiceBlockView: View {
 
 private extension WandKitMultiChoiceBlockView {
     func toggle(optionId: String) {
-        if block.allowMultiple == true {
+        if page.allowMultiple == true {
             if selection.contains(optionId) {
                 selection.remove(optionId)
             } else {

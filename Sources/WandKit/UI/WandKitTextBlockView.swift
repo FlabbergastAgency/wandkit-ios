@@ -2,14 +2,14 @@
 import SwiftUI
 
 struct WandKitTextBlockView: View {
-    let block: EventResponse.Block
+    let page: EventResponse.Page
     @Binding var text: String
     let onSkip: () -> Void
     let onConfirm: () -> Void
     
     var body: some View {
         VStack(alignment: .center, spacing: 16) {
-            WandKitBlockLabelView(block: block)
+            WandKitBlockLabelView(page: page)
             
             ZStack(alignment: .topLeading) {
                 if #available(iOS 16.0, *) {
@@ -27,7 +27,7 @@ struct WandKitTextBlockView: View {
                         .cornerRadius(12)
                 }
                 
-                if text.isEmpty, let placeholder = block.placeholder {
+                if text.isEmpty, let placeholder = page.placeholder {
                     Text(placeholder)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -39,7 +39,7 @@ struct WandKitTextBlockView: View {
 
             HStack(spacing: 12) {
                 actionButton(title: "Skip", isPrimary: false, action: onSkip)
-                actionButton(title: "Confirm", isPrimary: true, action: onConfirm)
+                actionButton(title: page.nextButtonLabel ?? "Confirm", isPrimary: true, action: onConfirm)
             }
         }
     }

@@ -2,7 +2,7 @@
 import SwiftUI
 
 struct WandKitStarsBlockView: View {
-    let block: EventResponse.Block
+    let page: EventResponse.Page
     let onSelect: (Int) -> Void
 
     @State private var selectedValue = 0
@@ -10,7 +10,7 @@ struct WandKitStarsBlockView: View {
 
     var body: some View {
         VStack(alignment: .center, spacing: 16) {
-            WandKitBlockLabelView(block: block)
+            WandKitBlockLabelView(page: page)
 
             HStack(spacing: 12) {
                 ForEach(1 ... 5, id: \.self) { value in
