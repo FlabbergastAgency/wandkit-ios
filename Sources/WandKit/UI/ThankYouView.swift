@@ -1,29 +1,42 @@
 #if os(iOS)
 import SwiftUI
 
-struct ThankYouView: View {
-    @State var progress: CGFloat = 0.05
+struct WandKitEndBlockView: View {
+    let page: EventResponse.Page
+    let hasNextPage: Bool
+    let onContinue: () -> Void
+    let onFinished: () -> Void
 
     var body: some View {
         VStack(alignment: .center, spacing: 20) {
-            TimeProgressView(progress: progress)
-                .frame(width: 80, height: 6)
+            WandKitBlockLabelView(page: page)
 
-            VStack(spacing: 12) {
-                Text("🙏")
-                    .font(.system(size: 56))
-
-                Text("Thank you!")
-                    .font(.title2.weight(.semibold))
-                    .foregroundColor(.primary)
+            if hasNextPage {
+                Button(
+                    action: {
+                        WandKitHaptics.buttonTap()
+                        onContinue()
+                    },
+                    label: {
+                        Text(page.nextButtonLabel ?? "Continue")
+                            .font(.headline)
+                            .multilineTextAlignment(.center)
+                            .foregroundColor(Color(uiColor: .systemBackground))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(Color(uiColor: .tintColor))
+                            .cornerRadius(12)
+                    }
+                )
+                .buttonStyle(.plain)
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
         }
         .onAppear {
-            withAnimation(.linear(duration: 0.8).delay(0.2)) {
-                progress = 1
+            guard !hasNextPage else {
+                return
             }
+
+            onFinished()
         }
     }
 }

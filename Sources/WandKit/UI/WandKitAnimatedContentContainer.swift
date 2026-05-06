@@ -47,7 +47,7 @@ struct WandKitAnimatedContentContainer<Content: View, ContentID: Hashable>: View
                                 }
                                 .blurTransitionIfAvailable()
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .frame(maxWidth: .infinity)
                         .frame(height: contentHeight, alignment: .top)
                         .clipped()
                     }

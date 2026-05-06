@@ -8,10 +8,10 @@ struct WandKitView: View {
 
     @State private var isVisible = false
     @State private var isDismissing = false
-    @State private var isShowingThankYou = false
     @State private var didSubmit = false
     @State private var didDismiss = false
-    @State private var currentPageIndex = 0
+    @State private var currentPageId: String?
+    @State private var visitedPageIds: Set<String> = []
     @State private var selectedStars: [String: Int] = [:]
     @State private var selectedThumbs: [String: Bool] = [:]
     @State private var selectedOptions: [String: Set<String>] = [:]
@@ -45,47 +45,24 @@ struct WandKitView: View {
 
 private extension WandKitView {
     var contentID: String {
-        if isShowingThankYou {
-            return "wandkit-thank-you"
-        }
-
         return currentPage?.id ?? "wandkit-empty"
     }
 
     var currentPage: EventResponse.Page? {
-        guard response.form.pages.indices.contains(currentPageIndex) else {
-            return nil
+        let resolvedPageId = currentPageId ?? response.form.pages.first?.id
+        guard let resolvedPageId else {
+            return response.form.pages.first
         }
 
-        return response.form.pages[currentPageIndex]
+        return response.form.pages.first { $0.id == resolvedPageId }
     }
 
     @ViewBuilder
     var contentView: some View {
-        if isShowingThankYou {
-            ThankYouView()
-        } else {
-            VStack(alignment: .center, spacing: 20) {
-                VStack(alignment: .center, spacing: 8) {
-                    Text(response.form.title)
-                        .font(.title2.weight(.semibold))
-                        .foregroundColor(.primary)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity)
-
-                    if !response.form.description.isEmpty {
-                        Text(response.form.description)
-                            .font(.body)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                            .frame(maxWidth: .infinity)
-                    }
-                }
-
-                if let page = currentPage {
-                    pageView(for: page)
-                        .id(page.id)
-                }
+        VStack(alignment: .center, spacing: 20) {
+            if let page = currentPage {
+                pageView(for: page)
+                    .id(page.id)
             }
         }
     }
@@ -136,6 +113,17 @@ private extension WandKitView {
                     advance(from: page)
                 }
             )
+        case .end:
+            WandKitEndBlockView(
+                page: page,
+                hasNextPage: resolveNextPageId(from: page) != nil,
+                onContinue: {
+                    advance(from: page)
+                },
+                onFinished: {
+                    completeFlowIfNeeded(lastPageId: page.id)
+                }
+            )
         }
     }
 
@@ -155,17 +143,24 @@ private extension WandKitView {
     }
 
     func advance(from page: EventResponse.Page) {
-        if currentPageIndex < response.form.pages.count - 1 {
+        visitedPageIds.insert(page.id)
+
+        if let nextPageId = resolveNextPageId(from: page),
+           response.form.pages.contains(where: { $0.id == nextPageId }) {
             WandKitHaptics.stepChange()
 
             withAnimation(.snappy(duration: animationDuration)) {
-                currentPageIndex += 1
+                currentPageId = nextPageId
             }
         } else {
-            WandKitLogger.debug("Completed form for eventId=\(response.eventId), lastPageId=\(page.id)")
-            submitAnswersOnce()
-            showThankYouThenDismiss()
+            completeFlowIfNeeded(lastPageId: page.id)
         }
+    }
+
+    func completeFlowIfNeeded(lastPageId: String) {
+        WandKitLogger.debug("Completed form for eventId=\(response.eventId), lastPageId=\(lastPageId)")
+        submitAnswersOnce()
+        showThankYouThenDismiss()
     }
 
     func submitAnswersOnce() {
@@ -182,6 +177,10 @@ private extension WandKitView {
 
     func formAnswers() -> [SubmitFormResponseRequest.Answer] {
         response.form.pages.compactMap { page in
+            guard visitedPageIds.contains(page.id), page.type != .end else {
+                return nil
+            }
+
             switch page.type {
             case .stars:
                 guard let value = selectedStars[page.id] else {
@@ -223,6 +222,8 @@ private extension WandKitView {
                     selectedOptionIds: nil,
                     text: textValues[page.id] ?? ""
                 )
+            case .end:
+                return nil
             }
         }
     }
@@ -231,12 +232,8 @@ private extension WandKitView {
         autoDismissTask?.cancel()
         WandKitHaptics.success()
 
-        withAnimation(.snappy(duration: animationDuration)) {
-            isShowingThankYou = true
-        }
-
         autoDismissTask = Task {
-            try? await Task.sleep(nanoseconds: 1_300_000_000)
+            try? await Task.sleep(nanoseconds: 600_000_000)
 
             guard !Task.isCancelled else {
                 return
@@ -306,6 +303,52 @@ private extension WandKitView {
                 }
             }
         )
+    }
+
+    func resolveNextPageId(from page: EventResponse.Page) -> String? {
+        for rule in page.next {
+            guard conditionMatches(rule.condition, on: page) else {
+                continue
+            }
+
+            return rule.pageId
+        }
+
+        return nil
+    }
+
+    func conditionMatches(_ condition: String?, on page: EventResponse.Page) -> Bool {
+        guard let condition, !condition.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return true
+        }
+
+        switch page.type {
+        case .thumbs:
+            switch condition {
+            case "thumb.up":
+                return selectedThumbs[page.id] == true
+            case "thumb.down":
+                return selectedThumbs[page.id] == false
+            default:
+                return false
+            }
+        case .stars:
+            guard condition.hasPrefix("star."),
+                  let value = Int(condition.replacingOccurrences(of: "star.", with: "")) else {
+                return false
+            }
+
+            return selectedStars[page.id] == value
+        case .multiChoice:
+            guard condition.hasPrefix("option.") else {
+                return false
+            }
+
+            let optionId = String(condition.dropFirst("option.".count))
+            return selectedOptions[page.id, default: []].contains(optionId)
+        case .text, .end:
+            return false
+        }
     }
 }
 #endif

@@ -50,8 +50,17 @@ struct WandKitService: Sendable {
             throw HTTPClientError.invalidStatusCode(response.response.statusCode)
         }
 
-        WandKitLogger.debug("Event request completed with event response")
-        return try responseDecoder().decode(EventResponse.self, from: response.data)
+        WandKitLogger.debug("Event response JSON: \(debugJSONString(from: response.data))")
+
+        do {
+            let decoded = try responseDecoder().decode(EventResponse.self, from: response.data)
+            WandKitLogger.debug("Event request completed with event response")
+            return decoded
+        } catch let error as DecodingError {
+            WandKitLogger.debug("Failed to decode EventResponse: \(formatDecodingError(error))")
+            WandKitLogger.debug("Decoding payload: \(debugJSONString(from: response.data))")
+            throw error
+        }
     }
 
     func submitFormResponse(
@@ -137,5 +146,42 @@ struct WandKitService: Sendable {
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
         return decoder
+    }
+
+    private func debugJSONString(from data: Data) -> String {
+        guard !data.isEmpty else {
+            return "<empty>"
+        }
+
+        if let object = try? JSONSerialization.jsonObject(with: data),
+           let prettyData = try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted]),
+           let prettyString = String(data: prettyData, encoding: .utf8) {
+            return prettyString
+        }
+
+        return String(data: data, encoding: .utf8) ?? "<non-utf8 \(data.count) bytes>"
+    }
+
+    private func formatDecodingError(_ error: DecodingError) -> String {
+        switch error {
+        case let .typeMismatch(type, context):
+            return "typeMismatch(\(type), path=\(codingPathString(context.codingPath)), description=\(context.debugDescription))"
+        case let .valueNotFound(type, context):
+            return "valueNotFound(\(type), path=\(codingPathString(context.codingPath)), description=\(context.debugDescription))"
+        case let .keyNotFound(key, context):
+            return "keyNotFound(\(key.stringValue), path=\(codingPathString(context.codingPath)), description=\(context.debugDescription))"
+        case let .dataCorrupted(context):
+            return "dataCorrupted(path=\(codingPathString(context.codingPath)), description=\(context.debugDescription))"
+        @unknown default:
+            return String(describing: error)
+        }
+    }
+
+    private func codingPathString(_ codingPath: [CodingKey]) -> String {
+        guard !codingPath.isEmpty else {
+            return "<root>"
+        }
+
+        return codingPath.map(\.stringValue).joined(separator: ".")
     }
 }
