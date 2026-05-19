@@ -5,12 +5,10 @@ struct WandKitService: Sendable {
     private let storage: WandKitStorage
 
     init(storage: WandKitStorage) {
-        WandKitLogger.debug("Initializing service")
         self.storage = storage
     }
 
     func identify(userId: String) async throws {
-        WandKitLogger.debug("Sending identify request for userId=\(userId)")
         _ = try await storage.httpClient.post(
             to: WandKitConstants.identifyURL,
             headers: headers(),
@@ -28,7 +26,6 @@ struct WandKitService: Sendable {
             value.isEmpty ? nil : value
         } ?? UUID().uuidString
 
-        WandKitLogger.debug("Sending event request for eventName=\(eventName)")
         let response = try await storage.httpClient.post(
             to: WandKitConstants.eventsURL,
             headers: headers(),
@@ -62,7 +59,6 @@ struct WandKitService: Sendable {
         answers: [SubmitFormResponseRequest.Answer],
         completedAt: Date = Date()
     ) async throws {
-        WandKitLogger.debug("Submitting form response for impressionId=\(impressionId)")
         let response = try await storage.httpClient.post(
             to: WandKitConstants.submitFormResponseURL(impressionId: impressionId),
             headers: headers(),
@@ -78,11 +74,9 @@ struct WandKitService: Sendable {
             throw HTTPClientError.invalidStatusCode(response.response.statusCode)
         }
 
-        WandKitLogger.debug("Submit form response completed")
     }
 
     func dismissForm(impressionId: String) async throws {
-        WandKitLogger.debug("Dismissing form for impressionId=\(impressionId)")
         let response = try await storage.httpClient.post(
             to: WandKitConstants.dismissFormURL(impressionId: impressionId),
             headers: headers(),
@@ -94,16 +88,12 @@ struct WandKitService: Sendable {
             throw HTTPClientError.invalidStatusCode(response.response.statusCode)
         }
 
-        WandKitLogger.debug("Dismiss form completed")
     }
 
     func rate(flowName: String) async throws {
-        WandKitLogger.debug("Sending rate request for flowName=\(flowName)")
         try? await Task.sleep(nanoseconds: 1_000_000_000)
-        WandKitLogger.debug("Rate request completed")
 
         #if os(iOS)
-        WandKitLogger.debug("Presenting WandKit window")
         await WandKitWindowPresenter.present(
             response: .mock,
             onSubmit: { _ in },
@@ -113,13 +103,11 @@ struct WandKitService: Sendable {
     }
 
     private func headers() -> [String: String] {
-        WandKitLogger.debug("Building request headers")
         guard let apiKey = storage.apiKey, !apiKey.isEmpty else {
             WandKitLogger.debug("No API key available")
             return [:]
         }
 
-        WandKitLogger.debug("Using API key header")
         return [WandKitConstants.apiKeyHeader: apiKey]
     }
 

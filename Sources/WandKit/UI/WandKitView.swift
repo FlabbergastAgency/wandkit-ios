@@ -122,7 +122,7 @@ private extension WandKitView {
                     advance(from: page)
                 },
                 onFinished: {
-                    completeFlowIfNeeded(lastPageId: page.id)
+                    completeFlowIfNeeded()
                 }
             )
         }
@@ -154,12 +154,11 @@ private extension WandKitView {
                 currentPageId = nextPageId
             }
         } else {
-            completeFlowIfNeeded(lastPageId: page.id)
+            completeFlowIfNeeded()
         }
     }
 
-    func completeFlowIfNeeded(lastPageId: String) {
-        WandKitLogger.debug("Completed form for eventId=\(response.eventId), lastPageId=\(lastPageId)")
+    func completeFlowIfNeeded() {
         submitAnswersOnce()
         showThankYouThenDismiss()
     }
@@ -253,7 +252,6 @@ private extension WandKitView {
 
         autoDismissTask?.cancel()
         submitDismissalIfNeeded()
-        WandKitLogger.debug("Dismiss requested")
         isDismissing = true
 
         withAnimation(.snappy(duration: animationDuration)) {

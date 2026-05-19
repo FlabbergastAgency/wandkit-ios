@@ -10,7 +10,6 @@ final class PasstroughWindow: UIWindow {
         onSubmit: @escaping @Sendable ([SubmitFormResponseRequest.Answer]) async -> Void,
         onDismiss: @escaping @Sendable () async -> Void
     ) {
-        WandKitLogger.debug("Creating PasstroughWindow")
         super.init(windowScene: windowScene)
 
         update(response: response, theme: theme, onSubmit: onSubmit, onDismiss: onDismiss)
@@ -21,7 +20,6 @@ final class PasstroughWindow: UIWindow {
     }
 
     required init?(coder: NSCoder) {
-        WandKitLogger.debug("init(coder:) is unsupported")
         fatalError("init(coder:) has not been implemented")
     }
 
@@ -31,7 +29,6 @@ final class PasstroughWindow: UIWindow {
         onSubmit: @escaping @Sendable ([SubmitFormResponseRequest.Answer]) async -> Void,
         onDismiss: @escaping @Sendable () async -> Void
     ) {
-        WandKitLogger.debug("Updating hosted WandKit view")
         let viewController = UIHostingController(
             rootView: WandKitView(response: response, onSubmit: onSubmit, onDismiss: onDismiss)
                 .environment(\.wandKitTheme, theme)
@@ -46,7 +43,6 @@ final class PasstroughWindow: UIWindow {
         view: UIView,
         depth: Int = 0
     ) -> (view: UIView, depth: Int)? {
-        WandKitLogger.debug("Hit-testing view=\(String(describing: type(of: view))) depth=\(depth)")
         var deepest: (view: UIView, depth: Int)? = .none
         let subviews = view.subviews.reversed()
         for subview in subviews {
@@ -56,7 +52,6 @@ final class PasstroughWindow: UIWindow {
                   !subview.isHidden,
                   subview.alpha > 0
             else {
-                WandKitLogger.debug("Skipping non-interactive subview")
                 continue
             }
 
@@ -78,15 +73,12 @@ final class PasstroughWindow: UIWindow {
             }
         }
 
-        WandKitLogger.debug("Hit-test result found=\(deepest != nil)")
         return deepest
     }
 
     public override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
-        WandKitLogger.debug("Evaluating point-inside")
         guard let rootView = rootViewController?.view else { return false }
         let hit = Self._hitTest(point, with: event, view: rootView)
-        WandKitLogger.debug("point(inside:with:) returning \(hit != nil)")
         return hit != nil
     }
 }
