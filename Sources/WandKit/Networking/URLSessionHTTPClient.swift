@@ -5,7 +5,6 @@ struct URLSessionHTTPClient: HTTPClient {
     private let session: URLSession
 
     init(session: URLSession = .shared) {
-        WandKitLogger.debug("Initializing URLSessionHTTPClient")
         self.session = session
     }
 
@@ -14,7 +13,6 @@ struct URLSessionHTTPClient: HTTPClient {
         headers: [String: String] = [:],
         body: Data? = nil
     ) async throws -> HTTPResponse {
-        WandKitLogger.debug("Posting to \(url.absoluteString)")
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.httpBody = body
@@ -26,11 +24,9 @@ struct URLSessionHTTPClient: HTTPClient {
         let (data, response) = try await perform(request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
-            WandKitLogger.debug("Received non-HTTP response")
             throw HTTPClientError.invalidResponse
         }
 
-        WandKitLogger.debug("Received statusCode=\(httpResponse.statusCode)")
         return HTTPResponse(data: data, response: httpResponse)
     }
 
@@ -40,7 +36,6 @@ struct URLSessionHTTPClient: HTTPClient {
         body: Body,
         encoder: JSONEncoder = JSONEncoder()
     ) async throws -> HTTPResponse {
-        WandKitLogger.debug("Encoding request body for \(url.absoluteString)")
         var requestHeaders = headers
         requestHeaders["Content-Type"] = requestHeaders["Content-Type"] ?? "application/json"
 
@@ -65,11 +60,9 @@ struct URLSessionHTTPClient: HTTPClient {
                     return
                 }
 
-                WandKitLogger.debug("Network request completed with \(data.count) bytes")
                 continuation.resume(returning: (data, response))
             }
 
-            WandKitLogger.debug("Resuming URLSession task")
             task.resume()
         }
     }

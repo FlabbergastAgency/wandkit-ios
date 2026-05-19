@@ -63,14 +63,6 @@ Calling `event(...)` triggers a feedback flow backed by `EventResponse` blocks. 
 
 On iOS, the feedback UI is presented in an overlay window above the current app interface.
 
-## Current Status
-
-This package is still under active development.
-
-- `identify(...)` performs a real network request.
-- `event(...)` currently returns a mock response in `WandKitService`, so the feedback form shown today is mock data.
-- The overlay presentation is currently implemented only for iOS.
-
 ## Development Notes
 
 - Swift tools version: `6.2`

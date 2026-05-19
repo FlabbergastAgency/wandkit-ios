@@ -17,7 +17,6 @@ struct WandKitService: Sendable {
             body: IdentifyRequest(userId: userId),
             encoder: JSONEncoder()
         )
-        WandKitLogger.debug("Identify request completed")
     }
 
     func event(
@@ -50,15 +49,10 @@ struct WandKitService: Sendable {
             throw HTTPClientError.invalidStatusCode(response.response.statusCode)
         }
 
-        WandKitLogger.debug("Event response JSON: \(debugJSONString(from: response.data))")
-
         do {
             let decoded = try responseDecoder().decode(EventResponse.self, from: response.data)
-            WandKitLogger.debug("Event request completed with event response")
             return decoded
         } catch let error as DecodingError {
-            WandKitLogger.debug("Failed to decode EventResponse: \(formatDecodingError(error))")
-            WandKitLogger.debug("Decoding payload: \(debugJSONString(from: response.data))")
             throw error
         }
     }
