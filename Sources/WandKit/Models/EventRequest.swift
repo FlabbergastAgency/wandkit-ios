@@ -5,7 +5,7 @@ struct EventRequest: Encodable {
     let user: User
     let properties: [String: String]?
     let occurredAt: Date
-    let sdk = SDK(platform: "ios", version: "1.4.0")
+    let sdk = SDK(platform: "ios", version: "0.1.1")
 }
 
 extension EventRequest {
