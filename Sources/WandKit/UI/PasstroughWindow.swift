@@ -6,13 +6,14 @@ final class PasstroughWindow: UIWindow {
     init(
         windowScene: UIWindowScene,
         response: EventResponse,
+        theme: WandKitTheme = .default,
         onSubmit: @escaping @Sendable ([SubmitFormResponseRequest.Answer]) async -> Void,
         onDismiss: @escaping @Sendable () async -> Void
     ) {
         WandKitLogger.debug("Creating PasstroughWindow")
         super.init(windowScene: windowScene)
 
-        update(response: response, onSubmit: onSubmit, onDismiss: onDismiss)
+        update(response: response, theme: theme, onSubmit: onSubmit, onDismiss: onDismiss)
         backgroundColor = .clear
         windowLevel = .alert + 1
         isHidden = false
@@ -26,12 +27,14 @@ final class PasstroughWindow: UIWindow {
 
     func update(
         response: EventResponse,
+        theme: WandKitTheme = .default,
         onSubmit: @escaping @Sendable ([SubmitFormResponseRequest.Answer]) async -> Void,
         onDismiss: @escaping @Sendable () async -> Void
     ) {
         WandKitLogger.debug("Updating hosted WandKit view")
         let viewController = UIHostingController(
             rootView: WandKitView(response: response, onSubmit: onSubmit, onDismiss: onDismiss)
+                .environment(\.wandKitTheme, theme)
         )
         viewController.view.backgroundColor = .clear
         rootViewController = viewController

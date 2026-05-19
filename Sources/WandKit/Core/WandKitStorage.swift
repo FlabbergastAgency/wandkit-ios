@@ -38,4 +38,18 @@ final class WandKitStorage: @unchecked Sendable {
             configuration.externalUserId = externalUserId
         }
     }
+
+    #if os(iOS)
+    var theme: WandKitTheme {
+        lock.withLock {
+            configuration.theme
+        }
+    }
+
+    func setTheme(_ theme: WandKitTheme) {
+        lock.withLock {
+            configuration.theme = theme
+        }
+    }
+    #endif
 }

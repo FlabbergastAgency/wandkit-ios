@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm list:*)",
+      "Bash(npm install:*)",
+      "Bash(node wandkit-pitch.js)",
+      "Bash(python \"/Users/jurajpavlek/Library/Application Support/Claude/local-agent-mode-sessions/skills-plugin/8bc99a35-2c16-40cb-9512-f1b7085429ec/77c5bac9-ba9c-47af-aebc-12724e9e6b9b/skills/pptx/scripts/office/soffice.py\" --headless --convert-to pdf WandKit-Pitch.pptx)",
+      "Bash(rm -f slide-*.jpg)",
+      "Bash(pdftoppm -jpeg -r 150 WandKit-Pitch.pdf slide)",
+      "Read(//private/tmp/$PWD/**)",
+      "Bash(python3 \"/Users/jurajpavlek/Library/Application Support/Claude/local-agent-mode-sessions/skills-plugin/8bc99a35-2c16-40cb-9512-f1b7085429ec/77c5bac9-ba9c-47af-aebc-12724e9e6b9b/skills/pptx/scripts/office/soffice.py\" --headless --convert-to pdf WandKit-Pitch.pptx)",
+      "Bash(python3 \"/Users/jurajpavlek/Library/Application Support/Claude/local-agent-mode-sessions/skills-plugin/8bc99a35-2c16-40cb-9512-f1b7085429ec/77c5bac9-ba9c-47af-aebc-12724e9e6b9b/skills/pptx/scripts/office/extract-text\" WandKit-Pitch.pptx)",
+      "Bash(python3 \"/Users/jurajpavlek/Library/Application Support/Claude/local-agent-mode-sessions/skills-plugin/8bc99a35-2c16-40cb-9512-f1b7085429ec/77c5bac9-ba9c-47af-aebc-12724e9e6b9b/skills/pptx/scripts/office/unpack.py\" WandKit-Pitch.pptx /tmp/wandkit-unpacked)",
+      "Bash(pip3 install:*)",
+      "Bash(for f:*)",
+      "Bash(do echo:*)",
+      "Read(//Users/jurajpavlek/Documents/wandkit-ios/**)",
+      "Bash(done)",
+      "Bash(mkdir -p /Users/jurajpavlek/.claude/skills/wandkit-setup/evals)",
+      "Bash(mkdir -p /Users/jurajpavlek/.claude/skills/wandkit-setup-workspace)"
+    ]
+  }
+}

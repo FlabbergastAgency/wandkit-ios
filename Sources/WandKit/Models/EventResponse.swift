@@ -100,6 +100,7 @@ extension EventResponse {
         public let title: String
         public let description: String
         public let pages: [Page]
+        public var isPro: Bool { false }
     }
 
     public struct Page: Decodable, Sendable {

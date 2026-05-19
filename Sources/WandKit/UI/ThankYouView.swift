@@ -6,10 +6,12 @@ struct WandKitEndBlockView: View {
     let hasNextPage: Bool
     let onContinue: () -> Void
     let onFinished: () -> Void
+    @Environment(\.wandKitTheme) private var theme
 
     var body: some View {
         VStack(alignment: .center, spacing: 20) {
             WandKitBlockLabelView(page: page)
+                .padding(.vertical, 20)
 
             if hasNextPage {
                 Button(
@@ -24,8 +26,8 @@ struct WandKitEndBlockView: View {
                             .foregroundColor(Color(uiColor: .systemBackground))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
-                            .background(Color(uiColor: .tintColor))
-                            .cornerRadius(12)
+                            .background(theme.accentColor)
+                            .cornerRadius(theme.buttonCornerRadius)
                     }
                 )
                 .buttonStyle(.plain)

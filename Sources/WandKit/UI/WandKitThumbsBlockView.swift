@@ -7,6 +7,7 @@ struct WandKitThumbsBlockView: View {
 
     @State private var selectedValue: Bool?
     @State private var isAdvancing = false
+    @Environment(\.wandKitTheme) private var theme
 
     var body: some View {
         VStack(alignment: .center, spacing: 16) {
@@ -32,17 +33,17 @@ private extension WandKitThumbsBlockView {
                 .foregroundColor(
                     isSelected
                         ? Color(uiColor: .systemBackground)
-                        : Color(uiColor: .tintColor)
+                        : theme.accentColor
                 )
                 .frame(width: 52, height: 52)
                 .background(
                     isSelected
-                        ? Color(uiColor: .tintColor)
+                        ? theme.accentColor
                         : Color(uiColor: .tertiarySystemFill)
                 )
                 .cornerRadius(12)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(ThumbButtonStyle())
         .disabled(isAdvancing)
     }
 
@@ -58,6 +59,31 @@ private extension WandKitThumbsBlockView {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             onSelect(value)
         }
+    }
+}
+
+public struct ThumbButtonStyle: ButtonStyle {
+    public init() {}
+    @State var scale: CGFloat = 1
+    @State var brightness: CGFloat = 0
+
+    public func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(scale)
+            .brightness(brightness)
+            .onChange(of: configuration.isPressed) { isPressed in
+                if isPressed {
+                    withAnimation(.snappy(duration: 0.1)) {
+                        scale = 1.12
+                        brightness = 0.2
+                    }
+                } else {
+                    withAnimation(.bouncy) {
+                        scale = 1
+                        brightness = 0
+                    }
+                }
+            }
     }
 }
 #endif

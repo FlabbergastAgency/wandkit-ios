@@ -9,6 +9,13 @@ public enum WandKit {
         storage.setAPIKey(apiKey)
     }
 
+    #if os(iOS)
+    public static func configure(apiKey: String, theme: WandKitTheme) {
+        configure(apiKey: apiKey)
+        storage.setTheme(theme)
+    }
+    #endif
+
     public static func identify(_ userId: String) {
         WandKitLogger.debug("Scheduling identify for userId=\(userId)")
         storage.setExternalUserId(userId)
@@ -36,6 +43,7 @@ public enum WandKit {
             #if os(iOS)
             await WandKitWindowPresenter.present(
                 response: response,
+                theme: storage.theme,
                 onSubmit: { answers in
                     do {
                         try await service.submitFormResponse(

@@ -6,6 +6,7 @@ struct WandKitTextBlockView: View {
     @Binding var text: String
     let onSkip: () -> Void
     let onConfirm: () -> Void
+    @Environment(\.wandKitTheme) private var theme
     
     var body: some View {
         VStack(alignment: .center, spacing: 16) {
@@ -59,22 +60,28 @@ private extension WandKitTextBlockView {
                 action()
             },
             label: {
-                Text(title)
-                    .font(.headline)
-                    .multilineTextAlignment(.center)
-                    .foregroundColor(
-                        isPrimary
-                        ? Color(uiColor: .systemBackground)
-                        : Color(uiColor: .tintColor)
-                    )
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(
-                        isPrimary
-                        ? Color(uiColor: .tintColor)
-                        : Color(uiColor: .tertiarySystemFill)
-                    )
-                    .cornerRadius(12)
+                ZStack {
+                    if isPrimary {
+                        Text(title)
+                            .font(.headline)
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(Color(uiColor: .label))
+                            .colorScheme(.dark)
+                    } else {
+                        Text(title)
+                            .font(.headline)
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(Color(uiColor: .label))
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(
+                    isPrimary
+                    ? theme.accentColor
+                    : Color(uiColor: .tertiarySystemFill)
+                )
+                .cornerRadius(theme.buttonCornerRadius)
             }
         )
         .buttonStyle(.plain)

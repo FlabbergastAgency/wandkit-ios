@@ -10,14 +10,14 @@ The package currently targets:
 Add the package in Xcode with **File -> Add Package Dependencies...** and use:
 
 ```text
-ssh://git@gitflab.com:22222/pavlekj/wandkit-ios.git
+https://github.com/FlabbergastAgency/wandkit-ios
 ```
 
 Or declare it in `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "ssh://git@gitflab.com:22222/pavlekj/wandkit-ios.git")
+    .package(url: "https://github.com/FlabbergastAgency/wandkit-ios", from: "0.1.0")
 ]
 ```
 

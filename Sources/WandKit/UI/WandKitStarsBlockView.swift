@@ -7,6 +7,7 @@ struct WandKitStarsBlockView: View {
 
     @State private var selectedValue = 0
     @State private var isAdvancing = false
+    @Environment(\.wandKitTheme) private var theme
 
     var body: some View {
         VStack(alignment: .center, spacing: 16) {
@@ -33,18 +34,12 @@ private extension WandKitStarsBlockView {
                 .font(.system(size: 30, weight: .semibold))
                 .foregroundColor(
                     isSelected
-                        ? Color(uiColor: .systemYellow)
-                        : Color(uiColor: .secondaryLabel)
+                        ? theme.starSelectedColor
+                        : theme.starUnselectedColor
                 )
                 .frame(width: 56, height: 56)
-                .background(
-                    isSelected
-                        ? Color(uiColor: .systemYellow).opacity(0.16)
-                        : Color(uiColor: .secondarySystemBackground)
-                )
-                .cornerRadius(14)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(StarButtonStyle())
         .disabled(isAdvancing)
     }
 
@@ -62,4 +57,26 @@ private extension WandKitStarsBlockView {
         }
     }
 }
+
+public struct StarButtonStyle: ButtonStyle {
+    public init() {}
+    @State var scale: CGFloat = 1
+
+    public func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(scale)
+            .onChange(of: configuration.isPressed) { isPressed in
+                if isPressed {
+                    withAnimation(.snappy(duration: 0.1)) {
+                        scale = 1.15
+                    }
+                } else {
+                    withAnimation(.bouncy) {
+                        scale = 1
+                    }
+                }
+            }
+    }
+}
+
 #endif

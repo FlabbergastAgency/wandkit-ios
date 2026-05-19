@@ -6,6 +6,7 @@ struct WandKitMultiChoiceBlockView: View {
     @Binding var selection: Set<String>
     let onSkip: () -> Void
     let onConfirm: () -> Void
+    @Environment(\.wandKitTheme) private var theme
 
     var body: some View {
         VStack(alignment: .center, spacing: 16) {
@@ -19,7 +20,7 @@ struct WandKitMultiChoiceBlockView: View {
                     } label: {
                         HStack {
                             Image(systemName: selection.contains(option.id) ? "checkmark.circle.fill" : "circle")
-                                .foregroundColor(Color(uiColor: .tintColor))
+                                .foregroundColor(theme.accentColor)
                             Text(option.label)
                                 .foregroundColor(.primary)
                                 .multilineTextAlignment(.center)
@@ -60,22 +61,28 @@ private extension WandKitMultiChoiceBlockView {
             WandKitHaptics.buttonTap()
             action()
         }) {
-            Text(title)
-                .font(.headline)
-                .multilineTextAlignment(.center)
-                .foregroundColor(
-                    isPrimary
-                        ? Color(uiColor: .systemBackground)
-                        : Color(uiColor: .tintColor)
-                )
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(
-                    isPrimary
-                        ? Color(uiColor: .tintColor)
-                        : Color(uiColor: .tertiarySystemFill)
-                )
-                .cornerRadius(12)
+            ZStack {
+                if isPrimary {
+                    Text(title)
+                        .font(.headline)
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(Color(uiColor: .label))
+                        .colorScheme(.dark)
+                } else {
+                    Text(title)
+                        .font(.headline)
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(Color(uiColor: .label))
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background(
+                isPrimary
+                ? theme.accentColor
+                : Color(uiColor: .tertiarySystemFill)
+            )
+            .cornerRadius(theme.buttonCornerRadius)
         }
         .buttonStyle(.plain)
     }

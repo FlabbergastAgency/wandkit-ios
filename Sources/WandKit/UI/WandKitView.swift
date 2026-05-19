@@ -24,6 +24,7 @@ struct WandKitView: View {
         WandKitAnimatedContentContainer(
             contentID: contentID,
             isVisible: isVisible,
+            showPoweredByLabel: !response.form.isPro,
             onDismiss: dismissAnimated
         ) {
             contentView
@@ -59,7 +60,7 @@ private extension WandKitView {
 
     @ViewBuilder
     var contentView: some View {
-        VStack(alignment: .center, spacing: 20) {
+        ZStack {
             if let page = currentPage {
                 pageView(for: page)
                     .id(page.id)
@@ -233,7 +234,7 @@ private extension WandKitView {
         WandKitHaptics.success()
 
         autoDismissTask = Task {
-            try? await Task.sleep(nanoseconds: 600_000_000)
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
 
             guard !Task.isCancelled else {
                 return
