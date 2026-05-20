@@ -8,6 +8,26 @@ struct URLSessionHTTPClient: HTTPClient {
         self.session = session
     }
 
+    func get(
+        from url: URL,
+        headers: [String: String] = [:]
+    ) async throws -> HTTPResponse {
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+
+        for (header, value) in headers {
+            request.setValue(value, forHTTPHeaderField: header)
+        }
+
+        let (data, response) = try await perform(request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw HTTPClientError.invalidResponse
+        }
+
+        return HTTPResponse(data: data, response: httpResponse)
+    }
+
     func post(
         to url: URL,
         headers: [String: String] = [:],

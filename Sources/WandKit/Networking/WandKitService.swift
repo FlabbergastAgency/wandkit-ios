@@ -90,6 +90,105 @@ struct WandKitService: Sendable {
 
     }
 
+    func createReferral(
+        userId: String,
+        campaign: String,
+        properties: [String: String]?
+    ) async throws -> ReferralInfo {
+        let response = try await storage.httpClient.post(
+            to: WandKitConstants.referralsURL,
+            headers: headers(),
+            body: CreateReferralRequest(userId: userId, campaign: campaign, properties: properties),
+            encoder: requestEncoder()
+        )
+
+        guard (200 ..< 300).contains(response.response.statusCode) else {
+            WandKitLogger.debug("Create referral failed with statusCode=\(response.response.statusCode)")
+            throw HTTPClientError.invalidStatusCode(response.response.statusCode)
+        }
+
+        let decoded = try responseDecoder().decode(CreateReferralResponse.self, from: response.data)
+        return ReferralInfo(
+            referralId: decoded.referralId,
+            code: decoded.code,
+            shortPath: decoded.shortPath,
+            campaign: decoded.campaign,
+            createdAt: decoded.createdAt,
+            expiresAt: decoded.expiresAt
+        )
+    }
+
+    func getReferral(path: String) async throws -> GetReferralResponse {
+        let response = try await storage.httpClient.get(
+            from: WandKitConstants.referralURL(path: path),
+            headers: headers()
+        )
+
+        guard (200 ..< 300).contains(response.response.statusCode) else {
+            WandKitLogger.debug("Get referral failed with statusCode=\(response.response.statusCode)")
+            throw HTTPClientError.invalidStatusCode(response.response.statusCode)
+        }
+
+        return try responseDecoder().decode(GetReferralResponse.self, from: response.data)
+    }
+
+    func matchReferral() async throws -> ReferralMatch? {
+        let fingerprint = WandKitDeviceInfo.makeMatchFingerprint(firstLaunchAt: storage.firstLaunchAt)
+        let response = try await storage.httpClient.post(
+            to: WandKitConstants.referralMatchURL,
+            headers: headers(),
+            body: ReferralMatchRequest(
+                installId: storage.installId,
+                fingerprint: fingerprint,
+                sdkVersion: WandKitConstants.sdkVersion
+            ),
+            encoder: requestEncoder()
+        )
+
+        if response.response.statusCode == 404 {
+            return nil
+        }
+
+        guard (200 ..< 300).contains(response.response.statusCode) else {
+            WandKitLogger.debug("Match referral failed with statusCode=\(response.response.statusCode)")
+            throw HTTPClientError.invalidStatusCode(response.response.statusCode)
+        }
+
+        let decoded = try responseDecoder().decode(ReferralMatchResponse.self, from: response.data)
+        return ReferralMatch(
+            referralId: decoded.referralId,
+            inviterId: decoded.inviterId,
+            campaign: decoded.campaign,
+            properties: decoded.properties ?? [:]
+        )
+    }
+
+    func redeemCode(_ code: String) async throws -> ReferralMatch {
+        let response = try await storage.httpClient.post(
+            to: WandKitConstants.redeemCodeURL,
+            headers: headers(),
+            body: RedeemCodeRequest(
+                installId: storage.installId,
+                code: code,
+                sdkVersion: WandKitConstants.sdkVersion
+            ),
+            encoder: requestEncoder()
+        )
+
+        guard (200 ..< 300).contains(response.response.statusCode) else {
+            WandKitLogger.debug("Redeem code failed with statusCode=\(response.response.statusCode)")
+            throw HTTPClientError.invalidStatusCode(response.response.statusCode)
+        }
+
+        let decoded = try responseDecoder().decode(ReferralMatchResponse.self, from: response.data)
+        return ReferralMatch(
+            referralId: decoded.referralId,
+            inviterId: decoded.inviterId,
+            campaign: decoded.campaign,
+            properties: decoded.properties ?? [:]
+        )
+    }
+
     func rate(flowName: String) async throws {
         try? await Task.sleep(nanoseconds: 1_000_000_000)
 

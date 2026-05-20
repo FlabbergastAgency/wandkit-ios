@@ -22,6 +22,26 @@ public enum WandKit {
         }
     }
 
+    @discardableResult
+    public static func invite(
+        userId: String,
+        campaign: String,
+        properties: [String: String]? = nil
+    ) async throws -> ReferralInfo {
+        try await service.createReferral(userId: userId, campaign: campaign, properties: properties)
+    }
+    public static func getReferral(path: String) async throws -> GetReferralResponse {
+        try await service.getReferral(path: path)
+    }
+
+    public static func matchReferral() async throws -> ReferralMatch? {
+        try await service.matchReferral()
+    }
+
+    public static func redeemCode(_ code: String) async throws -> ReferralMatch {
+        try await service.redeemCode(code)
+    }
+
     public static func event(
         _ eventName: String,
         properties: [String: String]? = nil,
