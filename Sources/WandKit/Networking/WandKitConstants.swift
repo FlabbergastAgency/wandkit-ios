@@ -8,8 +8,8 @@ enum WandKitConstants {
     static let eventsPathComponents = ["api", "v1", "sdk", "events"]
     static let formsPathComponents = ["api", "v1", "sdk", "forms"]
     static let referralsPathComponents = ["api", "v1", "referrals"]
-    static let referralMatchPathComponents = ["v1", "referrals", "match"]
-    static let redeemCodePathComponents = ["v1", "code", "redeem"]
+    static let referralMatchPathComponents = ["api", "v1", "referrals", "match"]
+    static let redeemCodePathComponents = ["api", "v1", "referrals", "redeem"]
     static let apiKeyHeader = "X-API-Key"
     static let sdkVersion = "ios-0.1.1"
 

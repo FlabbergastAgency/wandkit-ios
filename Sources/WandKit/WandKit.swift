@@ -28,10 +28,14 @@ public enum WandKit {
         campaign: String,
         properties: [String: String]? = nil
     ) async throws -> ReferralInfo {
-        try await service.createReferral(userId: userId, campaign: campaign, properties: properties)
+        try await service.createReferral(userId: userId, campaignKey: campaign, properties: properties)
     }
     public static func getReferral(path: String) async throws -> GetReferralResponse {
         try await service.getReferral(path: path)
+    }
+
+    public static func captureReferralFingerprint(referralId: String) async throws {
+        try await service.captureReferralFingerprint(referralId: referralId)
     }
 
     public static func matchReferral() async throws -> ReferralMatch? {

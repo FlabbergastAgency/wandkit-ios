@@ -92,13 +92,24 @@ struct WandKitService: Sendable {
 
     func createReferral(
         userId: String,
-        campaign: String,
+        campaignKey: String,
         properties: [String: String]?
     ) async throws -> ReferralInfo {
+        let requestProperties = properties?.reduce(into: [String: JSONValue]()) { partialResult, entry in
+            partialResult[entry.key] = .string(entry.value)
+        }
+
         let response = try await storage.httpClient.post(
             to: WandKitConstants.referralsURL,
             headers: headers(),
-            body: CreateReferralRequest(userId: userId, campaign: campaign, properties: properties),
+            body: CreateReferralRequest(
+                campaignKey: campaignKey,
+                userId: userId,
+                properties: requestProperties,
+                expiresAt: nil,
+                usageMode: nil,
+                maxUses: nil
+            ),
             encoder: requestEncoder()
         )
 
@@ -112,9 +123,19 @@ struct WandKitService: Sendable {
             referralId: decoded.referralId,
             code: decoded.code,
             shortPath: decoded.shortPath,
+            url: decoded.url,
             campaign: decoded.campaign,
+            campaignName: decoded.campaignName,
+            campaignImageUrl: decoded.campaignImageUrl,
+            projectName: decoded.projectName,
+            inviterId: decoded.inviterId,
+            status: decoded.status,
+            usageMode: decoded.usageMode,
+            maxUses: decoded.maxUses,
+            claimedCount: decoded.claimedCount,
             createdAt: decoded.createdAt,
-            expiresAt: decoded.expiresAt
+            expiresAt: decoded.expiresAt,
+            updatedAt: decoded.updatedAt
         )
     }
 
@@ -132,16 +153,30 @@ struct WandKitService: Sendable {
         return try responseDecoder().decode(GetReferralResponse.self, from: response.data)
     }
 
+    func captureReferralFingerprint(referralId: String) async throws {
+        let request = WandKitDeviceInfo.makeCaptureFingerprintRequest(referralId: referralId)
+        let response = try await storage.httpClient.post(
+            to: WandKitConstants.referralFingerprintURL(),
+            headers: headers(),
+            body: request,
+            encoder: requestEncoder()
+        )
+
+        guard (200 ..< 300).contains(response.response.statusCode) else {
+            WandKitLogger.debug("Capture referral fingerprint failed with statusCode=\(response.response.statusCode)")
+            throw HTTPClientError.invalidStatusCode(response.response.statusCode)
+        }
+    }
+
     func matchReferral() async throws -> ReferralMatch? {
-        let fingerprint = WandKitDeviceInfo.makeMatchFingerprint(firstLaunchAt: storage.firstLaunchAt)
+        let request = WandKitDeviceInfo.makeMatchRequest(
+            installId: storage.installId,
+            firstLaunchAt: storage.firstLaunchAt
+        )
         let response = try await storage.httpClient.post(
             to: WandKitConstants.referralMatchURL,
             headers: headers(),
-            body: ReferralMatchRequest(
-                installId: storage.installId,
-                fingerprint: fingerprint,
-                sdkVersion: WandKitConstants.sdkVersion
-            ),
+            body: request,
             encoder: requestEncoder()
         )
 
@@ -157,9 +192,15 @@ struct WandKitService: Sendable {
         let decoded = try responseDecoder().decode(ReferralMatchResponse.self, from: response.data)
         return ReferralMatch(
             referralId: decoded.referralId,
-            inviterId: decoded.inviterId,
-            campaign: decoded.campaign,
-            properties: decoded.properties ?? [:]
+            installId: decoded.installId,
+            claimMethod: decoded.claimMethod,
+            claimedAt: decoded.claimedAt,
+            inviterId: decoded.referral.inviterId,
+            campaign: decoded.referral.campaignKey,
+            campaignName: decoded.referral.campaignName,
+            code: decoded.referral.code,
+            shortPath: decoded.referral.shortPath,
+            properties: makeStringProperties(decoded.referral.properties)
         )
     }
 
@@ -169,8 +210,7 @@ struct WandKitService: Sendable {
             headers: headers(),
             body: RedeemCodeRequest(
                 installId: storage.installId,
-                code: code,
-                sdkVersion: WandKitConstants.sdkVersion
+                code: code
             ),
             encoder: requestEncoder()
         )
@@ -183,9 +223,15 @@ struct WandKitService: Sendable {
         let decoded = try responseDecoder().decode(ReferralMatchResponse.self, from: response.data)
         return ReferralMatch(
             referralId: decoded.referralId,
-            inviterId: decoded.inviterId,
-            campaign: decoded.campaign,
-            properties: decoded.properties ?? [:]
+            installId: decoded.installId,
+            claimMethod: decoded.claimMethod,
+            claimedAt: decoded.claimedAt,
+            inviterId: decoded.referral.inviterId,
+            campaign: decoded.referral.campaignKey,
+            campaignName: decoded.referral.campaignName,
+            code: decoded.referral.code,
+            shortPath: decoded.referral.shortPath,
+            properties: makeStringProperties(decoded.referral.properties)
         )
     }
 
@@ -226,7 +272,37 @@ struct WandKitService: Sendable {
     private func responseDecoder() -> JSONDecoder {
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let value = try container.decode(String.self)
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+
+            if let date = formatter.date(from: value) {
+                return date
+            }
+
+            formatter.formatOptions = [.withInternetDateTime]
+            if let date = formatter.date(from: value) {
+                return date
+            }
+
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: "Invalid ISO8601 date string: \(value)"
+            )
+        }
         return decoder
+    }
+
+    private func makeStringProperties(_ properties: [String: JSONValue]?) -> [String: String] {
+        guard let properties else {
+            return [:]
+        }
+
+        return properties.reduce(into: [String: String]()) { partialResult, entry in
+            partialResult[entry.key] = entry.value.stringValue ?? "null"
+        }
     }
 
     private func debugJSONString(from data: Data) -> String {

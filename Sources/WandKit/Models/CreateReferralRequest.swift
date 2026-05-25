@@ -1,7 +1,10 @@
 import Foundation
 
 struct CreateReferralRequest: Encodable {
+    let campaignKey: String
     let userId: String
-    let campaign: String
-    let properties: [String: String]?
+    let properties: [String: JSONValue]?
+    let expiresAt: Date?
+    let usageMode: String?
+    let maxUses: Int?
 }

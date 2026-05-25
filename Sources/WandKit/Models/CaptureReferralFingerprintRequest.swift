@@ -1,7 +1,7 @@
 import Foundation
 
-struct ReferralMatchRequest: Encodable {
-    let installId: String
+struct CaptureReferralFingerprintRequest: Encodable {
+    let referralId: String
     let userAgent: String
     let language: String
     let languages: [String]
