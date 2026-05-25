@@ -124,19 +124,9 @@ print(referral.code)   // 612948
 
 ---
 
-### Capture fingerprint (inviter side)
-
-If the inviter visits a web landing page, call `captureReferralFingerprint` after creating the referral so the browser fingerprint is stored for later probabilistic matching.
-
-```swift
-try await WandKit.captureReferralFingerprint(referralId: referral.referralId)
-```
-
----
-
 ### Match on install (invitee side)
 
-Call `matchReferral` on first app launch to automatically attribute the install to a referral using device fingerprinting. Returns `nil` if no match is found.
+Call `matchReferral` on first app launch to automatically attribute the install to a referral. Returns `nil` if no match is found.
 
 ```swift
 // AppDelegate / App init
