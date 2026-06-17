@@ -4,6 +4,7 @@ import UIKit
 @MainActor
 enum WandKitWindowPresenter {
     private static var window: PasstroughWindow?
+    private static weak var previousKeyWindow: UIWindow?
 
     static func present(
         response: EventResponse,
@@ -22,9 +23,11 @@ enum WandKitWindowPresenter {
 
         if let window, window.windowScene === windowScene {
             window.update(response: response, theme: theme, onSubmit: onSubmit, onDismiss: onDismiss)
-            window.isHidden = false
+            window.makeKeyAndVisible()
             return
         }
+
+        previousKeyWindow = windowScene.windows.first(where: \.isKeyWindow)
 
         let newWindow = PasstroughWindow(
             windowScene: windowScene,
@@ -33,10 +36,13 @@ enum WandKitWindowPresenter {
             onSubmit: onSubmit,
             onDismiss: onDismiss
         )
+        newWindow.makeKeyAndVisible()
         window = newWindow
     }
 
     static func dismiss() {
+        previousKeyWindow?.makeKey()
+        previousKeyWindow = nil
         window?.isHidden = true
         window = nil
     }

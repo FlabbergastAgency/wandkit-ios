@@ -51,6 +51,12 @@ final class WandKitStorage: @unchecked Sendable {
         }
     }
 
+    var environment: WandKit.Environment {
+        lock.withLock {
+            configuration.environment
+        }
+    }
+
     func setAPIKey(_ apiKey: String) {
         lock.withLock {
             configuration.apiKey = apiKey
@@ -60,6 +66,12 @@ final class WandKitStorage: @unchecked Sendable {
     func setExternalUserId(_ externalUserId: String) {
         lock.withLock {
             configuration.externalUserId = externalUserId
+        }
+    }
+
+    func setEnvironment(_ environment: WandKit.Environment) {
+        lock.withLock {
+            configuration.environment = environment
         }
     }
 

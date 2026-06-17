@@ -1,16 +1,26 @@
 import Foundation
 
 public enum WandKit {
+    public enum Environment: Sendable {
+        case production
+        case test
+    }
+
     private static let storage = WandKitStorage()
     private static let service = WandKitService(storage: storage)
 
-    public static func configure(apiKey: String) {
+    public static func configure(apiKey: String, environment: Environment = .production) {
         storage.setAPIKey(apiKey)
+        storage.setEnvironment(environment)
     }
 
     #if os(iOS)
-    public static func configure(apiKey: String, theme: WandKitTheme) {
-        configure(apiKey: apiKey)
+    public static func configure(
+        apiKey: String,
+        theme: WandKitTheme,
+        environment: Environment = .production
+    ) {
+        configure(apiKey: apiKey, environment: environment)
         storage.setTheme(theme)
     }
     #endif
@@ -52,11 +62,16 @@ public enum WandKit {
         occurredAt: Date = Date()
     ) {
         Task {
-            let response = try await service.event(
-                eventName: eventName,
-                properties: properties,
-                occurredAt: occurredAt
-            )
+            let response: EventResponse
+            if storage.environment == .test {
+                response = .mock
+            } else {
+                response = try await service.event(
+                    eventName: eventName,
+                    properties: properties,
+                    occurredAt: occurredAt
+                )
+            }
 
             print(response)
 
@@ -65,6 +80,10 @@ public enum WandKit {
                 response: response,
                 theme: storage.theme,
                 onSubmit: { answers in
+                    guard storage.environment != .test else {
+                        return
+                    }
+
                     do {
                         try await service.submitFormResponse(
                             impressionId: response.form.impressionId,
@@ -75,6 +94,10 @@ public enum WandKit {
                     }
                 },
                 onDismiss: {
+                    guard storage.environment != .test else {
+                        return
+                    }
+
                     do {
                         try await service.dismissForm(impressionId: response.form.impressionId)
                     } catch {
